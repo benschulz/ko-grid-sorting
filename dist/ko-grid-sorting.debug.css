@@ -1,0 +1,12 @@
+.ko-grid-column-header.ascending-order:before {
+  display: inline-block;
+  vertical-align: middle;
+  margin: -0.4em 0.2em 0 0;
+  content: "\25B2";
+}
+.ko-grid-column-header.descending-order:before {
+  display: inline-block;
+  vertical-align: middle;
+  margin: -0.4em 0.2em 0 0;
+  content: "\25BC";
+}
