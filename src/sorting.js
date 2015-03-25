@@ -1,6 +1,8 @@
 'use strict';
 
 define(['ko-grid'], function (koGrid) {
+    var extensionId = module.id.indexOf('/') < 0 ? module.id : module.id.substring(0, module.id.indexOf('/'));
+
     var DIRECTION_ASCENDING = 'ascending';
     var DIRECTION_DESCENDING = 'descending';
 
@@ -17,7 +19,7 @@ define(['ko-grid'], function (koGrid) {
         reverse: function () { return this.__reverse; }
     };
 
-    koGrid.defineExtension(module.id, {
+    koGrid.defineExtension(extensionId, {
         Constructor: function SortingExtension(bindingValue, config, grid) {
             var self = this;
 
@@ -102,5 +104,5 @@ define(['ko-grid'], function (koGrid) {
         }
     });
 
-    return koGrid.declareExtensionAlias('sorting', module.id);
+    return koGrid.declareExtensionAlias('sorting', extensionId);
 });
