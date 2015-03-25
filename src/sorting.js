@@ -1,23 +1,12 @@
 'use strict';
 
-define(['ko-grid'], function (koGrid) {
+define(['module', 'ko-grid'], function (module, koGrid) {
     var extensionId = module.id.indexOf('/') < 0 ? module.id : module.id.substring(0, module.id.indexOf('/'));
 
-    var DIRECTION_ASCENDING = 'ascending';
-    var DIRECTION_DESCENDING = 'descending';
-
-    var CLASS_ASCENDING_ORDER = 'ascending-order';
-    var CLASS_DESCENDING_ORDER = 'descending-order';
-
-    function Ordering(comparator, reverse) {
-        var self = this;
-        self.comparator = comparator;
-        self.__reverse = reverse || new Ordering((a, b) => comparator(b, a), this);
-    }
-
-    Ordering.prototype = {
-        reverse: function () { return this.__reverse; }
-    };
+    var DIRECTION_ASCENDING = 'ascending',
+        DIRECTION_DESCENDING = 'descending',
+        CLASS_ASCENDING_ORDER = 'ascending-order',
+        CLASS_DESCENDING_ORDER = 'descending-order';
 
     koGrid.defineExtension(extensionId, {
         Constructor: function SortingExtension(bindingValue, config, grid) {
@@ -54,32 +43,23 @@ define(['ko-grid'], function (koGrid) {
                     direction = direction === DIRECTION_ASCENDING ? DIRECTION_DESCENDING : DIRECTION_ASCENDING;
                     ordering = ordering.reverse();
                 } else {
-                    if (sortedByColumn) sortedByColumn.headerClasses.removeAll([CLASS_ASCENDING_ORDER, CLASS_DESCENDING_ORDER]);
+                    if (sortedByColumn)
+                        sortedByColumn.headerClasses.removeAll([CLASS_ASCENDING_ORDER, CLASS_DESCENDING_ORDER]);
+
                     sortedByColumn = column;
-
-                    var propertyInitiallySortDirection = bindingValue.initiallySortDirection;
-                    if (propertyInitiallySortDirection) {
-                        direction = propertyInitiallySortDirection === DIRECTION_DESCENDING ? DIRECTION_DESCENDING : DIRECTION_ASCENDING;
-                    } else {
-                        direction = DIRECTION_ASCENDING;
-                    }
-
+                    direction = DIRECTION_ASCENDING;
                     ordering = new Ordering(defaultComparator(column));
-
-                    if (direction === DIRECTION_DESCENDING) {
-                        ordering = ordering.reverse();
-                    }
                 }
 
-                var classes = sortedByColumn.headerClasses().filter(c => c !== CLASS_ASCENDING_ORDER && c !== CLASS_DESCENDING_ORDER);
-                classes.push(direction === DIRECTION_ASCENDING ? CLASS_ASCENDING_ORDER : CLASS_DESCENDING_ORDER);
-                column.headerClasses(classes);
-
+                column.headerClasses(sortedByColumn.headerClasses()
+                    .filter(c => c !== CLASS_ASCENDING_ORDER && c !== CLASS_DESCENDING_ORDER)
+                    .concat([direction === DIRECTION_ASCENDING ? CLASS_ASCENDING_ORDER : CLASS_DESCENDING_ORDER]));
                 grid.data.comparator(ordering.comparator);
             };
 
-            if (bindingValue.initiallySortedBy)
-                sortBy(grid.columns.byId(bindingValue.initiallySortedBy));
+            var initialSortingColumnId = bindingValue['initiallyBy'];
+            if (initialSortingColumnId)
+                sortBy(grid.columns.byId(initialSortingColumnId));
 
             grid.headers.onColumnHeaderClick(function (e, header) {
                 if (e.defaultPrevented) return;
@@ -103,6 +83,23 @@ define(['ko-grid'], function (koGrid) {
             };
         }
     });
+
+    /**
+     * @constructor
+     * @template T
+     *
+     * @param {function(T, T):number} comparator
+     * @param {Ordering=} reverse
+     */
+    function Ordering(comparator, reverse) {
+        var self = this;
+        self.comparator = comparator;
+        self.__reverse = reverse || new Ordering((a, b) => comparator(b, a), this);
+    }
+
+    Ordering.prototype = {
+        reverse: function () { return this.__reverse; }
+    };
 
     return koGrid.declareExtensionAlias('sorting', extensionId);
 });
