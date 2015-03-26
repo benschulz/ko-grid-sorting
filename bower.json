@@ -1,12 +1,12 @@
 {
   "name": "ko-grid-sorting",
   "main": "dist/ko-grid-sorting.js",
-  "description": "A ko-grid extensions to sort by column.",
+  "description": "A ko-grid extension to sort by column.",
   "authors": ["Ben Schulz (https://github.com/benschulz)"],
   "license": "BSD-3-Clause",
   "keywords": [
     "ko-grid",
-    "knockout"
+    "sorting"
   ],
   "repository": {
     "type": "git",

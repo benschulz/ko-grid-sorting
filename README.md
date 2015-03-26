@@ -1,1 +1,1 @@
-A ko-grid extensions to sort by column.
+A ko-grid extension to sort by column.
