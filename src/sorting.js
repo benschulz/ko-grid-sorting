@@ -1,6 +1,6 @@
 'use strict';
 
-define(['module', 'ko-grid'], function (module, koGrid) {
+define(['module', 'ko-grid', 'stringifyable'], function (module, koGrid, stringifyable) {
     var extensionId = module.id.indexOf('/') < 0 ? module.id : module.id.substring(0, module.id.indexOf('/'));
 
     var DIRECTION_ASCENDING = 'ascending',
@@ -14,47 +14,38 @@ define(['module', 'ko-grid'], function (module, koGrid) {
 
             var sortedByColumn;
             var direction;
-            var ordering;
+            var comparator;
 
             function valueOf(cell) {
                 var value = grid.data.valueSelector(cell);
                 return value && typeof value.valueOf === 'function' ? value.valueOf() : value;
             }
 
-            // TODO user should be able to to define the comparator (via column metadata)
-            function compareValues(valueA, valueB) {
-                return typeof valueA === 'string' && typeof valueB === 'string'
-                    ? (valueA.localeCompare(valueB))
-                    : (valueA <= valueB ? valueA < valueB ? -1 : 0 : 1);
-            }
-
             function defaultComparator(column) {
-                return function (rowA, rowB) {
-                    var valueA = valueOf(rowA[column.property]);
-                    var valueB = valueOf(rowB[column.property]);
+                var propertyName = column.property;
+                var accessor = row => valueOf(row[propertyName]);
+                stringifyable.makeStringifyable(accessor, () => stringifyable.functions.propertyAccessor(column.property).stringifyable);
 
-                    // TODO use Intl.Collator once safari implements internationalization.. see http://caniuse.com/#feat=internationalization
-                    return valueA === null && valueB === null ? 0 : valueA === null ? -1 : valueB === null ? 1 : compareValues(valueA, valueB);
-                };
+                return stringifyable.comparators.natural.onResultOf(accessor);
             }
 
             var sortBy = function (column) {
                 if (column === sortedByColumn) {
                     direction = direction === DIRECTION_ASCENDING ? DIRECTION_DESCENDING : DIRECTION_ASCENDING;
-                    ordering = ordering.reverse();
+                    comparator = comparator.reverse();
                 } else {
                     if (sortedByColumn)
                         sortedByColumn.headerClasses.removeAll([CLASS_ASCENDING_ORDER, CLASS_DESCENDING_ORDER]);
 
                     sortedByColumn = column;
                     direction = DIRECTION_ASCENDING;
-                    ordering = new Ordering(defaultComparator(column));
+                    comparator = defaultComparator(column);
                 }
 
                 column.headerClasses(sortedByColumn.headerClasses()
                     .filter(c => c !== CLASS_ASCENDING_ORDER && c !== CLASS_DESCENDING_ORDER)
                     .concat([direction === DIRECTION_ASCENDING ? CLASS_ASCENDING_ORDER : CLASS_DESCENDING_ORDER]));
-                grid.data.comparator(ordering.comparator);
+                grid.data.comparator(comparator);
             };
 
             var initialSortingColumnId = bindingValue['initiallyBy'];
@@ -70,9 +61,9 @@ define(['module', 'ko-grid'], function (module, koGrid) {
 
             var comparatorSubscription = grid.data.comparator.subscribe(function (newComparator) {
                 if (sortedByColumn) {
-                    if (newComparator !== ordering.comparator) {
+                    if (newComparator !== comparator) {
                         sortedByColumn.headerClasses.removeAll([CLASS_ASCENDING_ORDER, CLASS_DESCENDING_ORDER]);
-                        sortedByColumn = direction = ordering = null;
+                        sortedByColumn = direction = comparator = null;
                     }
                     grid.layout.recalculate();
                 }
@@ -83,23 +74,6 @@ define(['module', 'ko-grid'], function (module, koGrid) {
             };
         }
     });
-
-    /**
-     * @constructor
-     * @template T
-     *
-     * @param {function(T, T):number} comparator
-     * @param {Ordering=} reverse
-     */
-    function Ordering(comparator, reverse) {
-        var self = this;
-        self.comparator = comparator;
-        self.__reverse = reverse || new Ordering((a, b) => comparator(b, a), this);
-    }
-
-    Ordering.prototype = {
-        reverse: function () { return this.__reverse; }
-    };
 
     return koGrid.declareExtensionAlias('sorting', extensionId);
 });
